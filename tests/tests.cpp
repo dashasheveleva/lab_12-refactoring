@@ -3,14 +3,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include <iostream>
-#include <cstring>
-
-#include "Loger.hpp"
-#include "PageContainer.hpp"
-#include "Statistic.hpp"
-#include "UsedMemory.hpp"
-#include "sstream"
+#include "example.hpp"
 
 TEST(Example, EmptyTest) {
   EXPECT_TRUE(true);

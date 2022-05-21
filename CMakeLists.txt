@@ -49,7 +49,7 @@ target_link_libraries(${PROJECT_NAME} Boost::program_options)
 
 if(BUILD_TESTS)
   add_executable(tests
-          ${CMAKE_CURRENT_SOURCE_DIR}/tests/example.cpp
+          ${CMAKE_CURRENT_SOURCE_DIR}/tests/tests.cpp
   )
   target_link_libraries(tests ${PROJECT_NAME} GTest::gtest_main)
   enable_testing()

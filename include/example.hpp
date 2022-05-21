@@ -4,21 +4,55 @@
 #define INCLUDE_EXAMPLE_HPP_
 
 #include <iostream>
+#include <algorithm>
+#include <set>
+#include <cstring>
+#include <sstream>
 #include <string>
 #include <fstream>
 #include <vector>
 #include <string_view>
 
-class Log {
+//----------------------------------HISTOGRAM---------------------------------//
+class Histogram{
  public:
-  void Write(std::string_view message) const;
+  static Histogram& GetInstance();
 
-  void WriteDebug(std::string_view message) const;
+  [[nodiscard]] int Get_num() const;
 
-  explicit Log(size_t level);
+  [[nodiscard]] float Get_avg() const;
+
+  void Set_svg(const float& avg_);
+
+  void PlusNumSkip();
+
+  void NewLap();
+ private:
+  Histogram() = default;
+  Histogram( const Histogram&) = delete;
+  Histogram& operator=( Histogram& ) = delete;
+
+  int num = 0;
+  float avg = 0;
+};
+//-----------------------------------LOGGER-----------------------------------//
+class Loger {
+ public:
+  static Loger& GetInstance();
+
+  void Setting(bool level);
+
+  void Write(const std::string_view& message) const;
+
+  void WriteDebug(const std::string_view& message) const;
 
  private:
-  size_t level_ = 0;
+  Loger(): level_(false), out_(&std::cout){}
+
+  Loger( const Loger&) = delete;
+  Loger& operator=(Loger& ) = delete;
+
+  bool level_ = false;
   mutable std::ostream* out_;
 };
 
@@ -27,53 +61,61 @@ struct Item {
   std::string name;
   float score = 0;
 };
-
+//---------------------------------USEDMEMORY---------------------------------//
 class UsedMemory {
  public:
-  explicit UsedMemory(const Log& log);
-
   void OnDataLoad(const std::vector<Item>& old_items,
                   const std::vector<Item>& new_items);
 
   void OnRawDataLoad(const std::vector<std::string>& old_items,
                      const std::vector<std::string>& new_items);
 
-  size_t used() const;
+  [[nodiscard]] size_t Used() const;
 
  private:
-  const Log* log_;
   size_t used_ = 0;
 };
-
+//--------------------------------STARTSENDER---------------------------------//
 class StatSender {
  public:
-  explicit StatSender(const Log& log);
   void OnLoaded(const std::vector<Item>& new_items);
-
   void Skip(const Item& item);
+  virtual ~StatSender() = default;
 
  private:
-  void AsyncSend(const std::vector<Item>& items, std::string_view path);
-
-  const Log* log_;
+  virtual void AsyncSend(const std::vector<Item>& items, std::string_view path);
   std::ofstream fstr{"network", std::ios::binary};
 };
+//--------------------------------PAGECONTAINER-------------------------------//
+constexpr size_t kMinLines = 10;
 
 class PageContainer {
  public:
-  void Load(std::istream& io, float threshold);
-  const Item& ByIndex(size_t i) const;
+  void RawLoad(std::istream& file);
 
-  const Item& ById(const std::string& id) const;
+  [[nodiscard]] const Item& ByIndex(const size_t& i) const;
 
-  void Reload(float threshold);
+  [[nodiscard]] const Item& ById(const std::string& id) const;
 
-  PageContainer(const Log& log, UsedMemory* memory_counter);
+  [[nodiscard]] size_t GetRawDataSize() const;
+
+  [[nodiscard]] size_t GetDataSize() const;
+
+  void DataLoad(const float& threshold);
+
+  static bool IsCorrect(std::string& line);
+
+  void PrintTable() const;
+
+  explicit PageContainer(UsedMemory* memory_counter = new UsedMemory(),
+                         StatSender* statistic_sender = new StatSender())
+      : memory_counter_(memory_counter), statistic_sender_(statistic_sender){}
+
+  ~PageContainer();
 
  private:
-  const Log* log_;
   UsedMemory* memory_counter_;
-  StatSender stat_sender_;
+  StatSender* statistic_sender_;
   std::vector<Item> data_;
   std::vector<std::string> raw_data_;
 };

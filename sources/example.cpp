@@ -1,88 +1,129 @@
 // Copyright 2022 Shevelyova Darya photodoshfy@gmail.com
 
-#include <algorithm>
-#include <example.hpp>
-#include <iostream>
-#include <set>
-#include <sstream>
+#include "example.hpp"
 
-void Log::Write(std::string_view message) const {
-  *out_ << message << std::endl;
+//----------------------------------HISTOGRAM---------------------------------//
+int Histogram::Get_num() const {return num;}
+Histogram& Histogram::GetInstance() {
+  static Histogram instance;
+  return instance;
 }
-
-void Log::WriteDebug(std::string_view message) const {
-  if (level_ > 0) *out_ << message << std::endl;
+void Histogram::Set_svg(const float& avg_) {avg = avg_;}
+void Histogram::PlusNumSkip() {++num;}
+void Histogram::NewLap() {num = 0;}
+float Histogram::Get_avg() const {return avg;}
+//-----------------------------------LOGGER-------------------------------------
+void Loger::Write(const std::string_view& message) const {
+  *out_ << "[info] " << message << std::endl;
 }
-
-Log::Log(size_t level) : level_(level) { out_ = &std::cout; }
-
-constexpr size_t kMinLines = 10;
-
-UsedMemory::UsedMemory(const Log& log) : log_(&log) {}
-
+void Loger::WriteDebug(const std::string_view& message) const {
+  if (level_) *out_ << "[debug] " << message << std::endl;
+}
+Loger& Loger::GetInstance() {
+  static Loger instance;
+  return instance;
+}
+void Loger::Setting(bool level) {
+  level_ = level;
+}
+//---------------------------------USEDMEMORY---------------------------------//
 void UsedMemory::OnDataLoad(const std::vector<Item>& old_items,
-                const std::vector<Item>& new_items) {
-  log_->WriteDebug("UsedMemory::OnDataLoad");
+                            const std::vector<Item>& new_items) {
+  Loger::GetInstance().WriteDebug("UsedMemory::OnDataLoad");
+  for (const auto& item : new_items) {
+    used_ += item.id.capacity();
+    used_ += item.name.capacity();
+    used_ += sizeof(item.score);
+  }
+
   for (const auto& item : old_items) {
     used_ -= item.id.capacity();
     used_ -= item.name.capacity();
     used_ -= sizeof(item.score);
   }
 
-  for (const auto& item : new_items) {
-    used_ += item.id.capacity();
-    used_ += item.name.capacity();
-    used_ += sizeof(item.score);
-  }
-  log_->Write("UsedMemory::OnDataLoad: new size = " + std::to_string(used_));
+  Loger::GetInstance().Write("UsedMemory::OnDataLoad: new size = " +
+                             std::to_string(used_));
 }
 
 void UsedMemory::OnRawDataLoad(const std::vector<std::string>& old_items,
-                   const std::vector<std::string>& new_items) {
-  log_->WriteDebug("UsedMemory::OnRawDataLoads");
-  for (const auto& item : old_items) {
-    used_ -= item.capacity();
-  }
-
+                               const std::vector<std::string>& new_items) {
+  Loger::GetInstance().WriteDebug("UsedMemory::OnRawDataLoads");
   for (const auto& item : new_items) {
     used_ += item.capacity();
   }
-  log_->Write("UsedMemory::OnDataLoad: new size = " + std::to_string(used_));
+  for (const auto& item : old_items) {
+    used_ -= item.capacity();
+  }
+  Loger::GetInstance().Write("UsedMemory::OnDataLoad: new size = " +
+                             std::to_string(used_));
 }
 
-size_t UsedMemory::used() const { return used_; }
-
-StatSender::StatSender(const Log& log) : log_(&log) {}
-
+size_t UsedMemory::Used() const {
+  return used_;
+}
+//--------------------------------STARTSENDER---------------------------------//
 void StatSender::OnLoaded(const std::vector<Item>& new_items) {
-  log_->WriteDebug("StatSender::OnDataLoad");
+  Loger::GetInstance().WriteDebug("StatSender::OnDataLoad");
 
   AsyncSend(new_items, "/items/loaded");
 }
 
-void StatSender::Skip(const Item& item) { AsyncSend({item}, "/items/skiped"); }
+void StatSender::Skip(const Item& item) {
+  AsyncSend({item}, "/items/skiped");
+}
 
-void StatSender::AsyncSend(
-    const std::vector<Item>& items,
-    std::string_view path) {
-  log_->Write(path);
-  log_->Write("send stat " + std::to_string(items.size()));
+void StatSender::AsyncSend(const std::vector<Item>& items,
+                          std::string_view path) {
+  Loger::GetInstance().Write(path);
+  Loger::GetInstance().Write("send stat " + std::to_string(items.size()));
 
   for (const auto& item : items) {
-    log_->WriteDebug("send: " + item.id);
+    Loger::GetInstance().WriteDebug("send: " + item.id);
     // ... some code
     fstr << item.id << item.name << item.score;
     fstr.flush();
   }
 }
 
-void PageContainer::Load(std::istream& io, float threshold) {
+const Item& PageContainer::ByIndex(const size_t& i) const {
+  return data_[i];
+}
+
+const Item& PageContainer::ById(const std::string& id) const {
+  auto it = std::find_if(std::begin(data_), std::end(data_),
+                         [&id](const auto& i) { return id == i.id; });
+  return *it;
+}
+//--------------------------------PAGECONTAINER-------------------------------//
+void PageContainer::PrintTable() const {
+  std::cout << "|\tid\t |\t\tname\t\t|\tscore\t|\n";
+  std::string separator = "_________________________________________\n";
+  std::cout << separator;
+  for (size_t i = 0; i < data_.size(); ++i) {
+    const auto& item = ByIndex(i);
+    std::cout << "|   " << item.id << "\t |\t\t" <<
+        item.name << "\t\t|\t" << item.score << "\t\t|" << std::endl;
+    const auto& item2 = ById(std::to_string(i));
+    std::cout << "|   " << item2.id << "\t |\t\t" <<
+        item2.name << "\t\t|\t" << item2.score << "\t\t|" << std::endl;
+    std::cout << separator;
+  }
+}
+
+void PageContainer::RawLoad(std::istream& file) {
   std::vector<std::string> raw_data;
 
-  while (!io.eof()) {
+  if (!file) throw std::runtime_error("file don`t open");
+
+  if (file.peek() == EOF)  throw std::runtime_error("file is empty");
+
+  Loger::GetInstance().WriteDebug("file open");
+
+  while (!file.eof()) {
     std::string line;
-    std::getline(io, line, '\n');
-    raw_data.push_back(std::move(line));
+    std::getline(file, line, '\n');
+    if (IsCorrect(line)) raw_data.push_back(std::move(line));
   }
 
   if (raw_data.size() < kMinLines) {
@@ -91,9 +132,14 @@ void PageContainer::Load(std::istream& io, float threshold) {
 
   memory_counter_->OnRawDataLoad(raw_data_, raw_data);
   raw_data_ = std::move(raw_data);
+}
 
+void PageContainer::DataLoad(const float& threshold) {
+  Histogram::GetInstance().NewLap();
   std::vector<Item> data;
   std::set<std::string> ids;
+  float sum = 0;
+  size_t counter = 0;
   for (const auto& line : raw_data_) {
     std::stringstream stream(line);
 
@@ -106,56 +152,43 @@ void PageContainer::Load(std::istream& io, float threshold) {
 
     if (item.score > threshold) {
       data.push_back(std::move(item));
+      sum += item.score;
+      ++counter;
     } else {
-      stat_sender_.Skip(item);
+      statistic_sender_->Skip(item);
+      Histogram::GetInstance().PlusNumSkip();
     }
   }
-
+  Histogram::GetInstance().Set_svg(sum/counter);
   if (data.size() < kMinLines) {
-    throw std::runtime_error("oops");
+    throw std::runtime_error("correct items less then const");
   }
 
   memory_counter_->OnDataLoad(data_, data);
-  stat_sender_.OnLoaded(data);
+  statistic_sender_->OnLoaded(data);
   data_ = std::move(data);
 }
 
-const Item& PageContainer::ByIndex(size_t i) const { return data_[i]; }
-
-const Item& PageContainer::ById(const std::string& id) const {
-  auto it = std::find_if(std::begin(data_), std::end(data_),
-                         [&id](const auto& i) { return id == i.id; });
-  return *it;
-}
-
-void PageContainer::Reload(float threshold) {
-  std::vector<Item> data;
-  std::set<std::string> ids;
-  for (const auto& line : raw_data_) {
-    std::stringstream stream(line);
-
-    Item item;
-    stream >> item.id >> item.name >> item.score;
-
-    if (auto&& [_, inserted] = ids.insert(item.id); !inserted) {
-      throw std::runtime_error("already seen");
-    }
-
-    if (item.score > threshold) {
-      data.push_back(std::move(item));
-    } else {
-      stat_sender_.Skip(item);
+bool PageContainer::IsCorrect(std::string& line) {
+  size_t counter = 0;
+  bool status = true;
+  for (auto& ch : line){
+    if (ch == ' ') {
+      ++counter;
+    } else if (counter == 0) {
+      status = (ch >= '0' && ch <= '9') && status;
+    } else if (counter == 1) {
+      status = ((ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z')) && status;
+    } else if (counter == 2) {
+      status = (ch >= '0' && ch <= '9') && status;
     }
   }
-
-  if (data.size() < kMinLines) {
-    throw std::runtime_error("oops");
-  }
-
-  memory_counter_->OnDataLoad(data_, data);
-  stat_sender_.OnLoaded(data);
-  data_ = std::move(data);
+  status = status && (counter == 2);
+  return status;
 }
-
-PageContainer::PageContainer(const Log& log, UsedMemory* memory_counter)
-    : log_(&log), memory_counter_(memory_counter), stat_sender_(*log_) {}
+size_t PageContainer::GetRawDataSize() const { return raw_data_.size(); }
+size_t PageContainer::GetDataSize() const { return data_.size(); }
+PageContainer::~PageContainer() {
+  delete memory_counter_;
+  delete statistic_sender_;
+}
