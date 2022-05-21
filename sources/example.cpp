@@ -1,11 +1,10 @@
-// Copyright 2021 Your Name <your_email>
+// Copyright 2022 Shevelyova Darya photodoshfy@gmail.com
 
 #include <algorithm>
+#include <example.hpp>
 #include <iostream>
 #include <set>
 #include <sstream>
-
-#include <example.hpp>
 
 void Log::Write(std::string_view message) const {
   *out_ << message << std::endl;

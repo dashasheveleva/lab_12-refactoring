@@ -1,5 +1,6 @@
-#include <example.hpp>
+// Copyright 2022 Shevelyova Darya photodoshfy@gmail.com
 
+#include <example.hpp>
 #include <string>
 
 int main(int argc, char* argv[]) {
