@@ -35,10 +35,10 @@ class Histogram{
   int num = 0;
   float avg = 0;
 };
-//-----------------------------------LOGGER-----------------------------------//
-class Loger {
+//------------------------------------LOG-------------------------------------//
+class Log {
  public:
-  static Loger& GetInstance();
+  static Log& GetInstance();
 
   void Setting(bool level);
 
@@ -47,10 +47,10 @@ class Loger {
   void WriteDebug(const std::string_view& message) const;
 
  private:
-  Loger(): level_(false), out_(&std::cout){}
+  Log(): level_(false), out_(&std::cout){}
 
-  Loger( const Loger&) = delete;
-  Loger& operator=(Loger& ) = delete;
+  Log( const Log&) = delete;
+  Log& operator=(Log& ) = delete;
 
   bool level_ = false;
   mutable std::ostream* out_;
@@ -75,7 +75,7 @@ class UsedMemory {
  private:
   size_t used_ = 0;
 };
-//--------------------------------STARTSENDER---------------------------------//
+//---------------------------------STATSENDER---------------------------------//
 class StatSender {
  public:
   void OnLoaded(const std::vector<Item>& new_items);

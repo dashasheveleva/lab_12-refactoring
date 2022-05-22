@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.18)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 option(BUILD_TESTS "Build tests" ON)
@@ -20,7 +20,6 @@ HunterGate(
   SHA1 "95c47c92f68edb091b5d6d18924baabe02a6962a"
 )
 
-# TODO: rename project and delete this comment
 project(template VERSION 0.1.0)
 string(APPEND CMAKE_CXX_FLAGS " -pedantic -Werror -Wall -Wextra")
 string(APPEND CMAKE_CXX_FLAGS " -Wno-unused-command-line-argument")
@@ -37,6 +36,7 @@ add_library(${PROJECT_NAME} STATIC
 
 add_executable(demo
   ${CMAKE_CURRENT_SOURCE_DIR}/demo/main.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/sources/example.cpp
 )
 
 target_include_directories(${PROJECT_NAME} PUBLIC
@@ -51,7 +51,9 @@ if(BUILD_TESTS)
   add_executable(tests
           ${CMAKE_CURRENT_SOURCE_DIR}/tests/tests.cpp
   )
-  target_link_libraries(tests ${PROJECT_NAME} GTest::gtest_main)
+  target_link_libraries(tests ${PROJECT_NAME}
+          GTest::gtest_main
+          GTest::gmock_main)
   enable_testing()
   add_test(NAME unit_tests COMMAND tests)
 endif()

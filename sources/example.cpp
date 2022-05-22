@@ -12,24 +12,24 @@ void Histogram::Set_svg(const float& avg_) {avg = avg_;}
 void Histogram::PlusNumSkip() {++num;}
 void Histogram::NewLap() {num = 0;}
 float Histogram::Get_avg() const {return avg;}
-//-----------------------------------LOGGER-------------------------------------
-void Loger::Write(const std::string_view& message) const {
+//-------------------------------------LOG------------------------------------//
+void Log::Write(const std::string_view& message) const {
   *out_ << "[info] " << message << std::endl;
 }
-void Loger::WriteDebug(const std::string_view& message) const {
+void Log::WriteDebug(const std::string_view& message) const {
   if (level_) *out_ << "[debug] " << message << std::endl;
 }
-Loger& Loger::GetInstance() {
-  static Loger instance;
+Log& Log::GetInstance() {
+  static Log instance;
   return instance;
 }
-void Loger::Setting(bool level) {
+void Log::Setting(bool level) {
   level_ = level;
 }
 //---------------------------------USEDMEMORY---------------------------------//
 void UsedMemory::OnDataLoad(const std::vector<Item>& old_items,
                             const std::vector<Item>& new_items) {
-  Loger::GetInstance().WriteDebug("UsedMemory::OnDataLoad");
+  Log::GetInstance().WriteDebug("UsedMemory::OnDataLoad");
   for (const auto& item : new_items) {
     used_ += item.id.capacity();
     used_ += item.name.capacity();
@@ -42,29 +42,29 @@ void UsedMemory::OnDataLoad(const std::vector<Item>& old_items,
     used_ -= sizeof(item.score);
   }
 
-  Loger::GetInstance().Write("UsedMemory::OnDataLoad: new size = " +
+  Log::GetInstance().Write("UsedMemory::OnDataLoad: new size = " +
                              std::to_string(used_));
 }
 
 void UsedMemory::OnRawDataLoad(const std::vector<std::string>& old_items,
                                const std::vector<std::string>& new_items) {
-  Loger::GetInstance().WriteDebug("UsedMemory::OnRawDataLoads");
+  Log::GetInstance().WriteDebug("UsedMemory::OnRawDataLoads");
   for (const auto& item : new_items) {
     used_ += item.capacity();
   }
   for (const auto& item : old_items) {
     used_ -= item.capacity();
   }
-  Loger::GetInstance().Write("UsedMemory::OnDataLoad: new size = " +
+  Log::GetInstance().Write("UsedMemory::OnDataLoad: new size = " +
                              std::to_string(used_));
 }
 
 size_t UsedMemory::Used() const {
   return used_;
 }
-//--------------------------------STARTSENDER---------------------------------//
+//---------------------------------STATSENDER---------------------------------//
 void StatSender::OnLoaded(const std::vector<Item>& new_items) {
-  Loger::GetInstance().WriteDebug("StatSender::OnDataLoad");
+  Log::GetInstance().WriteDebug("StatSender::OnDataLoad");
 
   AsyncSend(new_items, "/items/loaded");
 }
@@ -75,17 +75,17 @@ void StatSender::Skip(const Item& item) {
 
 void StatSender::AsyncSend(const std::vector<Item>& items,
                           std::string_view path) {
-  Loger::GetInstance().Write(path);
-  Loger::GetInstance().Write("send stat " + std::to_string(items.size()));
+  Log::GetInstance().Write(path);
+  Log::GetInstance().Write("send stat " + std::to_string(items.size()));
 
   for (const auto& item : items) {
-    Loger::GetInstance().WriteDebug("send: " + item.id);
+    Log::GetInstance().WriteDebug("send: " + item.id);
     // ... some code
     fstr << item.id << item.name << item.score;
     fstr.flush();
   }
 }
-
+//--------------------------------PAGECONTAINER-------------------------------//
 const Item& PageContainer::ByIndex(const size_t& i) const {
   return data_[i];
 }
@@ -95,7 +95,7 @@ const Item& PageContainer::ById(const std::string& id) const {
                          [&id](const auto& i) { return id == i.id; });
   return *it;
 }
-//--------------------------------PAGECONTAINER-------------------------------//
+
 void PageContainer::PrintTable() const {
   std::cout << "|\tid\t |\t\tname\t\t|\tscore\t|\n";
   std::string separator = "_________________________________________\n";
@@ -118,7 +118,7 @@ void PageContainer::RawLoad(std::istream& file) {
 
   if (file.peek() == EOF)  throw std::runtime_error("file is empty");
 
-  Loger::GetInstance().WriteDebug("file open");
+  Log::GetInstance().WriteDebug("file open");
 
   while (!file.eof()) {
     std::string line;
