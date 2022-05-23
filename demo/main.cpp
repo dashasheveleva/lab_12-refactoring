@@ -11,16 +11,11 @@ void CreatePo(boost::program_options::options_description& desc,
               const int& argc, const char** argv){
   desc.add_options()
       ("help,h", "Help screen\n")
-
-          ("log_debug,l", "Logger status (Release(if OFF) or Debug(if ON))\n")
-
-              ("input,i", boost::program_options::value<std::string>()->default_value(
-                              "data.txt"),
-               "Name of input file\n")
-
-                  ("threshold,t", boost::program_options::value<int>()->
-                                  default_value(1),
-                   "Enter number\n");
+      ("log_debug,l", "Logger status (Release(if OFF) or Debug(if ON))\n")
+      ("input,i", boost::program_options::value<std::string>()->default_value(
+                              "data.txt"), "Name of input file\n")
+      ("threshold,t", boost::program_options::value<int>()->
+                               default_value(1), "Enter number\n");
   store(parse_command_line(argc, argv, desc), vm);
   notify(vm);
 }

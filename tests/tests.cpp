@@ -53,32 +53,6 @@ TEST(File, Error_fomat){
   EXPECT_EQ(10, page.GetRawDataSize());
 }
 
-class MockStatSender : public StatSender {
- public:
-  MOCK_METHOD2(AsyncSend, void(const std::vector<Item>&, std::string_view));
-};
-
-/*TEST(Stat, Sender){
-  using ::testing::_;
-  using ::testing::AtLeast;
-  auto* used = new UsedMemory();
-  auto* sender = new MockStatSender();
-  PageContainer page(used, sender);
-  std::stringstream ss;
-  ss << "0 name 10\n1 name 3\n2 name 4\n3 name 3\n4 name 10\n5 name 7\n"
-        "6 name 4\n7 name 4\n8 name 5\n9 name 18\n10 name 12\n11 name 10\n"
-        "12 name 17\n13 name 10\n14 name 11\n15 name 9\n";
-  page.RawLoad(ss);
-  EXPECT_CALL(*sender,
-              AsyncSend(_, std::string_view{"/items/loaded"}))
-      .Times(2);
-  EXPECT_CALL(*sender,
-              AsyncSend(_, std::string_view{"/items/skiped"}))
-      .Times(5);
-  page.DataLoad(1);
-  page.DataLoad(4);
-}*/
-
 TEST(Memory, UsedMemory){
   std::vector<std::string> old_raw_data{ "line1" };
   std::vector<std::string> new_raw_data {"line1", "line2", "line3", "line4"};

@@ -3,29 +3,7 @@
 #include "example.hpp"
 
 //----------------------------------HISTOGRAM---------------------------------//
-int Histogram::Get_num() const {return num;}
-Histogram& Histogram::GetInstance() {
-  static Histogram instance;
-  return instance;
-}
-void Histogram::Set_svg(const float& avg_) {avg = avg_;}
-void Histogram::PlusNumSkip() {++num;}
-void Histogram::NewLap() {num = 0;}
-float Histogram::Get_avg() const {return avg;}
 //-------------------------------------LOG------------------------------------//
-void Log::Write(const std::string_view& message) const {
-  *out_ << "[info] " << message << std::endl;
-}
-void Log::WriteDebug(const std::string_view& message) const {
-  if (level_) *out_ << "[debug] " << message << std::endl;
-}
-Log& Log::GetInstance() {
-  static Log instance;
-  return instance;
-}
-void Log::Setting(bool level) {
-  level_ = level;
-}
 //---------------------------------USEDMEMORY---------------------------------//
 void UsedMemory::OnDataLoad(const std::vector<Item>& old_items,
                             const std::vector<Item>& new_items) {
@@ -58,10 +36,6 @@ void UsedMemory::OnRawDataLoad(const std::vector<std::string>& old_items,
   Log::GetInstance().Write("UsedMemory::OnDataLoad: new size = " +
                              std::to_string(used_));
 }
-
-size_t UsedMemory::Used() const {
-  return used_;
-}
 //---------------------------------STATSENDER---------------------------------//
 void StatSender::OnLoaded(const std::vector<Item>& new_items) {
   Log::GetInstance().WriteDebug("StatSender::OnDataLoad");
@@ -80,33 +54,23 @@ void StatSender::AsyncSend(const std::vector<Item>& items,
 
   for (const auto& item : items) {
     Log::GetInstance().WriteDebug("send: " + item.id);
-    // ... some code
     fstr << item.id << item.name << item.score;
     fstr.flush();
   }
 }
 //--------------------------------PAGECONTAINER-------------------------------//
-const Item& PageContainer::ByIndex(const size_t& i) const {
-  return data_[i];
-}
-
-const Item& PageContainer::ById(const std::string& id) const {
-  auto it = std::find_if(std::begin(data_), std::end(data_),
-                         [&id](const auto& i) { return id == i.id; });
-  return *it;
-}
-
 void PageContainer::PrintTable() const {
-  std::cout << "|\tid\t |\t\tname\t\t|\tscore\t|\n";
   std::string separator = "_________________________________________\n";
+  std::cout << separator;
+  std::cout << "|   id\t |\tname\t|\tscore\t|\n";
   std::cout << separator;
   for (size_t i = 0; i < data_.size(); ++i) {
     const auto& item = ByIndex(i);
-    std::cout << "|   " << item.id << "\t |\t\t" <<
-        item.name << "\t\t|\t" << item.score << "\t\t|" << std::endl;
+    std::cout << "|   " << item.id << "\t |\t" <<
+        item.name << "\t|\t" << item.score << "\t|" << std::endl;
     const auto& item2 = ById(std::to_string(i));
-    std::cout << "|   " << item2.id << "\t |\t\t" <<
-        item2.name << "\t\t|\t" << item2.score << "\t\t|" << std::endl;
+    std::cout << "|   " << item2.id << "\t |\t" <<
+        item2.name << "\t|\t" << item2.score << "\t|" << std::endl;
     std::cout << separator;
   }
 }
@@ -115,9 +79,7 @@ void PageContainer::RawLoad(std::istream& file) {
   std::vector<std::string> raw_data;
 
   if (!file) throw std::runtime_error("file don`t open");
-
   if (file.peek() == EOF)  throw std::runtime_error("file is empty");
-
   Log::GetInstance().WriteDebug("file open");
 
   while (!file.eof()) {
@@ -185,10 +147,4 @@ bool PageContainer::IsCorrect(std::string& line) {
   }
   status = status && (counter == 2);
   return status;
-}
-size_t PageContainer::GetRawDataSize() const { return raw_data_.size(); }
-size_t PageContainer::GetDataSize() const { return data_.size(); }
-PageContainer::~PageContainer() {
-  delete memory_counter_;
-  delete statistic_sender_;
 }

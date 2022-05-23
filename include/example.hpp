@@ -16,39 +16,40 @@
 //----------------------------------HISTOGRAM---------------------------------//
 class Histogram{
  public:
-  static Histogram& GetInstance();
+  static Histogram& GetInstance(){
+    static Histogram instance;
+    return instance;
+  }
+  [[nodiscard]] int Get_num() const {return num;}
+  [[nodiscard]] float Get_avg() const {return avg;}
+  void Set_svg(const float& avg_) {avg = avg_;}
+  void PlusNumSkip() {++num;}
+  void NewLap() {num = 0;}
 
-  [[nodiscard]] int Get_num() const;
-
-  [[nodiscard]] float Get_avg() const;
-
-  void Set_svg(const float& avg_);
-
-  void PlusNumSkip();
-
-  void NewLap();
  private:
   Histogram() = default;
   Histogram( const Histogram&) = delete;
   Histogram& operator=( Histogram& ) = delete;
-
   int num = 0;
   float avg = 0;
 };
 //------------------------------------LOG-------------------------------------//
 class Log {
  public:
-  static Log& GetInstance();
-
-  void Setting(bool level);
-
-  void Write(const std::string_view& message) const;
-
-  void WriteDebug(const std::string_view& message) const;
+  static Log& GetInstance() {
+    static Log instance;
+    return instance;
+  }
+  void Setting(bool level) {level_ = level;}
+  void Write(const std::string_view& message) const {
+    *out_ << "[info] " << message << std::endl;
+  }
+  void WriteDebug(const std::string_view& message) const {
+    if (level_) *out_ << "[debug] " << message << std::endl;
+  }
 
  private:
   Log(): level_(false), out_(&std::cout){}
-
   Log( const Log&) = delete;
   Log& operator=(Log& ) = delete;
 
@@ -70,7 +71,7 @@ class UsedMemory {
   void OnRawDataLoad(const std::vector<std::string>& old_items,
                      const std::vector<std::string>& new_items);
 
-  [[nodiscard]] size_t Used() const;
+  [[nodiscard]] size_t Used() const {return used_;}
 
  private:
   size_t used_ = 0;
@@ -93,25 +94,29 @@ class PageContainer {
  public:
   void RawLoad(std::istream& file);
 
-  [[nodiscard]] const Item& ByIndex(const size_t& i) const;
+  [[nodiscard]] const Item& ByIndex(const size_t& i) const {
+    return data_[i];
+  }
 
-  [[nodiscard]] const Item& ById(const std::string& id) const;
+  [[nodiscard]] const Item& ById(const std::string& id) const {
+    auto it = std::find_if(std::begin(data_), std::end(data_),
+                           [&id](const auto& i) { return id == i.id; });
+    return *it;
+  }
 
-  [[nodiscard]] size_t GetRawDataSize() const;
-
-  [[nodiscard]] size_t GetDataSize() const;
-
+  [[nodiscard]] size_t GetRawDataSize() const { return raw_data_.size();}
+  [[nodiscard]] size_t GetDataSize() const { return data_.size(); }
   void DataLoad(const float& threshold);
-
   static bool IsCorrect(std::string& line);
-
   void PrintTable() const;
-
   explicit PageContainer(UsedMemory* memory_counter = new UsedMemory(),
                          StatSender* statistic_sender = new StatSender())
       : memory_counter_(memory_counter), statistic_sender_(statistic_sender){}
 
-  ~PageContainer();
+  ~PageContainer() {
+    delete memory_counter_;
+    delete statistic_sender_;
+  }
 
  private:
   UsedMemory* memory_counter_;
